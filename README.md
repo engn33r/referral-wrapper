@@ -1,6 +1,6 @@
 ## Yearn Referral Deposit Wrapper
 
-This repo is designed specifically for [Yearn partners](https://partners.yearn.fi/). It contains a minimal wrapper that forwards deposits into Yearn V3 vaults while emitting referral events (`ReferralDeposit` / `ReferralMint`). The wrapper never owns shares or assets: users receive Yearn vault shares directly and can withdraw from the vault without interacting with this contract.
+This repo is designed specifically for [Yearn partners](https://partners.yearn.fi/). It contains a minimal wrapper that forwards deposits into Yearn V3 vaults while emitting referral events (`ReferralDeposit`). The wrapper never owns shares or assets: users receive Yearn vault shares directly and can withdraw from the vault without interacting with this contract.
 
 The goal is to keep this code as simple, secure, and gas efficient as possible. It only serves as a way to identify referred deposits to enable fee sharing with partners, because Yearn v3 vaults do not have a native referral system built-in.
 
@@ -65,7 +65,7 @@ To deploy on a new chain, point `--rpc-url` at that network and reuse the same `
 
 #### How one contract supports all partner referrals
 
-Users from partner sites call `depositWithReferral` or `mintWithReferral` with:
+Users from partner sites call `depositWithReferral` with:
 - `vault`: any Yearn-endorsed V3 vault on that chain.
 - `receiver`: the end user receiving the shares.
 - `referrer`: the partner's referral address (or other attribution address).

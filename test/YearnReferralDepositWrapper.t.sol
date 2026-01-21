@@ -85,36 +85,6 @@ contract MockVault {
         lastShares = assets;
         return assets;
     }
-
-    function previewMint(uint256 shares) external pure returns (uint256 assets) {
-        return shares;
-    }
-
-    function mint(uint256 shares, address receiver) external returns (uint256 assets) {
-        require(shares > 0, "cannot mint zero");
-        IERC20(asset).transferFrom(msg.sender, address(this), shares);
-        lastSender = msg.sender;
-        lastReceiver = receiver;
-        lastAssets = shares;
-        lastShares = shares;
-        return shares;
-    }
-}
-
-contract MockVaultZeroPreview {
-    address public asset;
-
-    constructor(address asset_) {
-        asset = asset_;
-    }
-
-    function previewMint(uint256) external pure returns (uint256 assets) {
-        return 0;
-    }
-
-    function mint(uint256, address) external pure returns (uint256 assets) {
-        revert("cannot deposit zero");
-    }
 }
 
 contract MockRegistry {
@@ -130,14 +100,6 @@ contract MockRegistry {
 
 contract YearnReferralDepositWrapperTest is Test {
     event ReferralDeposit(
-        address indexed sender,
-        address indexed receiver,
-        address indexed referrer,
-        address vault,
-        uint256 assets,
-        uint256 shares
-    );
-    event ReferralMint(
         address indexed sender,
         address indexed receiver,
         address indexed referrer,
@@ -186,28 +148,6 @@ contract YearnReferralDepositWrapperTest is Test {
         assertEq(vault.lastShares(), amount);
     }
 
-    function testMintWithReferralEmitsAndTransfers() external {
-        uint256 amount = 2_345e18;
-        token.mint(user, amount);
-
-        vm.startPrank(user);
-        IERC20(address(token)).approve(address(wrapper), amount);
-
-        vm.expectEmit(true, true, true, true);
-        emit ReferralMint(user, receiver, referrer, address(vault), amount, amount);
-
-        uint256 assets = wrapper.mintWithReferral(address(vault), amount, receiver, referrer);
-        vm.stopPrank();
-
-        assertEq(assets, amount);
-        assertEq(IERC20(address(token)).balanceOf(address(vault)), amount);
-        assertEq(IERC20(address(token)).balanceOf(address(wrapper)), 0);
-        assertEq(vault.lastSender(), address(wrapper));
-        assertEq(vault.lastReceiver(), receiver);
-        assertEq(vault.lastAssets(), amount);
-        assertEq(vault.lastShares(), amount);
-    }
-
     function testDepositWithReferralUsesFullBalanceWhenMax() external {
         uint256 amount = 10e18;
         token.mint(user, amount);
@@ -246,11 +186,6 @@ contract YearnReferralDepositWrapperTest is Test {
         wrapper.depositWithReferral(address(0), 1, receiver, referrer);
     }
 
-    function testMintWithReferralRevertsOnZeroVault() external {
-        vm.expectRevert("vault is not endorsed");
-        wrapper.mintWithReferral(address(0), 1, receiver, referrer);
-    }
-
     function testDepositWithReferralRevertsOnZeroAssets() external {
         token.mint(user, 1);
         vm.startPrank(user);
@@ -258,18 +193,6 @@ contract YearnReferralDepositWrapperTest is Test {
         vm.expectRevert("cannot deposit zero");
         wrapper.depositWithReferral(address(vault), 0, receiver, referrer);
         vm.stopPrank();
-    }
-
-    function testMintWithReferralRevertsOnZeroShares() external {
-        vm.expectRevert("cannot mint zero");
-        wrapper.mintWithReferral(address(vault), 0, receiver, referrer);
-    }
-
-    function testMintWithReferralRevertsOnZeroAssetsFromPreview() external {
-        MockVaultZeroPreview zeroPreview = new MockVaultZeroPreview(address(token));
-
-        vm.expectRevert("cannot deposit zero");
-        wrapper.mintWithReferral(address(zeroPreview), 1, receiver, referrer);
     }
 
     function testDepositWithReferralRevertsOnMaxWhenBalanceZero() external {
@@ -316,7 +239,7 @@ contract YearnReferralDepositWrapperTest is Test {
         token.mint(address(wrapper), 1e18);
 
         vm.prank(user);
-        vm.expectRevert("Must be called by owner");
+        vm.expectRevert("Must be called by governance");
         wrapper.sweep(IERC20(address(token)));
     }
 }

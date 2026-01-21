@@ -7,8 +7,6 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 /// @notice Minimal interface for Yearn V3 vault deposits.
 interface IVault {
     function deposit(uint256 assets, address receiver) external returns (uint256);
-    function mint(uint256 shares, address receiver) external returns (uint256);
-    function previewMint(uint256 shares) external view returns (uint256);
     function asset() external view returns (address);
 }
 
@@ -24,15 +22,6 @@ contract YearnReferralDepositWrapper {
     using SafeERC20 for IERC20;
     /// @notice Emitted after a referral deposit is forwarded to a vault.
     event ReferralDeposit(
-        address indexed sender,
-        address indexed receiver,
-        address indexed referrer,
-        address vault,
-        uint256 assets,
-        uint256 shares
-    );
-    /// @notice Emitted after a referral mint is forwarded to a vault.
-    event ReferralMint(
         address indexed sender,
         address indexed receiver,
         address indexed referrer,
@@ -72,32 +61,6 @@ contract YearnReferralDepositWrapper {
         token.forceApprove(vault, assets);
         shares = IVault(vault).deposit(assets, receiver);
         emit ReferralDeposit(msg.sender, receiver, referrer, vault, assets, shares);
-    }
-
-    /// @notice Mint shares from a vault and emit a referral event.
-    /// @param vault The Yearn V3 vault to mint from.
-    /// @param shares The amount of shares to mint.
-    /// @param receiver The address to receive vault shares.
-    /// @param referrer The address that referred the minter.
-    /// @return assets The amount of assets spent to mint the shares.
-    function mintWithReferral(
-        address vault,
-        uint256 shares,
-        address receiver,
-        address referrer
-    ) external returns (uint256 assets) {
-        // Official Yearn vaults are endorsed in the registry, prevent deposits to other vaults
-        require(IRegistry(registry).isEndorsed(vault), "vault is not endorsed");
-
-        // cache values
-        IERC20 token = IERC20(IVault(vault).asset());
-        assets = IVault(vault).previewMint(shares);
-
-        // Now pass through the tokens to deposit in the vault
-        token.safeTransferFrom(msg.sender, address(this), assets);
-        token.forceApprove(vault, assets);
-        assets = IVault(vault).mint(shares, receiver);
-        emit ReferralMint(msg.sender, receiver, referrer, vault, assets, shares);
     }
 
     /// @notice Sweep ERC20 tokens held by this wrapper

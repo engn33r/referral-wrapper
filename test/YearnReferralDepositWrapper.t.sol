@@ -77,6 +77,7 @@ contract MockVault {
     }
 
     function deposit(uint256 assets, address receiver) external returns (uint256 shares) {
+        require(assets > 0, "cannot deposit zero");
         IERC20(asset).transferFrom(msg.sender, address(this), assets);
         lastSender = msg.sender;
         lastReceiver = receiver;
@@ -90,6 +91,7 @@ contract MockVault {
     }
 
     function mint(uint256 shares, address receiver) external returns (uint256 assets) {
+        require(shares > 0, "cannot mint zero");
         IERC20(asset).transferFrom(msg.sender, address(this), shares);
         lastSender = msg.sender;
         lastReceiver = receiver;
@@ -108,6 +110,10 @@ contract MockVaultZeroPreview {
 
     function previewMint(uint256) external pure returns (uint256 assets) {
         return 0;
+    }
+
+    function mint(uint256, address) external pure returns (uint256 assets) {
+        revert("cannot deposit zero");
     }
 }
 
@@ -249,27 +255,27 @@ contract YearnReferralDepositWrapperTest is Test {
         token.mint(user, 1);
         vm.startPrank(user);
         IERC20(address(token)).approve(address(wrapper), 1);
-        vm.expectRevert("zero assets");
+        vm.expectRevert("cannot deposit zero");
         wrapper.depositWithReferral(address(vault), 0, receiver, referrer);
         vm.stopPrank();
     }
 
     function testMintWithReferralRevertsOnZeroShares() external {
-        vm.expectRevert("zero shares");
+        vm.expectRevert("cannot mint zero");
         wrapper.mintWithReferral(address(vault), 0, receiver, referrer);
     }
 
     function testMintWithReferralRevertsOnZeroAssetsFromPreview() external {
         MockVaultZeroPreview zeroPreview = new MockVaultZeroPreview(address(token));
 
-        vm.expectRevert("zero assets");
+        vm.expectRevert("cannot deposit zero");
         wrapper.mintWithReferral(address(zeroPreview), 1, receiver, referrer);
     }
 
     function testDepositWithReferralRevertsOnMaxWhenBalanceZero() external {
         vm.startPrank(user);
         IERC20(address(token)).approve(address(wrapper), type(uint256).max);
-        vm.expectRevert("zero assets");
+        vm.expectRevert("cannot deposit zero");
         wrapper.depositWithReferral(address(vault), type(uint256).max, receiver, referrer);
         vm.stopPrank();
     }

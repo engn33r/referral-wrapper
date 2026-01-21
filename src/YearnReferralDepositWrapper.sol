@@ -41,6 +41,7 @@ contract YearnReferralDepositWrapper {
         uint256 shares
     );
 
+    // This registry address works for all EVM chains
     address constant registry = 0xd40ecF29e001c76Dcc4cC0D9cd50520CE845B038;
 
     /// @notice Deposit assets into a vault and emit a referral event.
@@ -58,17 +59,17 @@ contract YearnReferralDepositWrapper {
         // Official Yearn vaults are endorsed in the registry, prevent deposits to other vaults
         require(IRegistry(registry).isEndorsed(vault), "vault is not endorsed");
 
+        // cache values
         IERC20 token = IERC20(IVault(vault).asset());
         // While this logic duplicates what the Yearn v3 vault does,
         // it is necessary to enable compatibility for the type(uint256).max case
         if (assets == type(uint256).max) {
             assets = token.balanceOf(msg.sender);
         }
-        require(assets > 0, "zero assets");
 
+        // Now pass through the tokens to deposit in the vault
         token.safeTransferFrom(msg.sender, address(this), assets);
         token.forceApprove(vault, assets);
-
         shares = IVault(vault).deposit(assets, receiver);
         emit ReferralDeposit(msg.sender, receiver, referrer, vault, assets, shares);
     }
@@ -87,26 +88,26 @@ contract YearnReferralDepositWrapper {
     ) external returns (uint256 assets) {
         // Official Yearn vaults are endorsed in the registry, prevent deposits to other vaults
         require(IRegistry(registry).isEndorsed(vault), "vault is not endorsed");
-        require(shares > 0, "zero shares");
 
+        // cache values
         IERC20 token = IERC20(IVault(vault).asset());
         assets = IVault(vault).previewMint(shares);
-        require(assets > 0, "zero assets");
 
+        // Now pass through the tokens to deposit in the vault
         token.safeTransferFrom(msg.sender, address(this), assets);
         token.forceApprove(vault, assets);
-
         assets = IVault(vault).mint(shares, receiver);
         emit ReferralMint(msg.sender, receiver, referrer, vault, assets, shares);
     }
 
     /// @notice Sweep ERC20 tokens held by this wrapper
+    /// @dev This contract should never hold tokens, so this is for emergencies
     /// @param _token The ERC20 token to sweep
     function sweep(
         IERC20 _token
     ) external {
         address gov = IRegistry(registry).governance();
-        require(msg.sender == gov, "Must be called by owner");
+        require(msg.sender == gov, "Must be called by governance");
         _token.safeTransfer(gov, _token.balanceOf(address(this)));
     }
 }

@@ -78,7 +78,6 @@ contract YearnReferralDepositWrapperForkTest is Test {
         IERC20(asset).approve(address(wrapper), DEPOSIT_AMOUNT);
         vm.expectEmit(true, true, true, false, address(wrapper));
         emit YearnReferralDepositWrapper.ReferralDeposit(
-            USER,
             RECEIVER,
             REFERRER,
             vault,
@@ -105,7 +104,7 @@ contract YearnReferralDepositWrapperForkTest is Test {
         deal(asset, address(wrapper), amount);
 
         vm.prank(USER);
-        vm.expectRevert("Must be called by owner");
+        vm.expectRevert("Must be called by governance");
         wrapper.sweep(IERC20(asset));
 
         uint256 governanceBefore = IERC20(asset).balanceOf(governance);

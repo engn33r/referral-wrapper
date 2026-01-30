@@ -100,10 +100,9 @@ contract MockRegistry {
 
 contract YearnReferralDepositWrapperTest is Test {
     event ReferralDeposit(
-        address indexed sender,
-        address indexed receiver,
+        address receiver,
         address indexed referrer,
-        address vault,
+        address indexed vault,
         uint256 assets,
         uint256 shares
     );
@@ -134,7 +133,7 @@ contract YearnReferralDepositWrapperTest is Test {
         IERC20(address(token)).approve(address(wrapper), amount);
 
         vm.expectEmit(true, true, true, true);
-        emit ReferralDeposit(user, receiver, referrer, address(vault), amount, amount);
+        emit ReferralDeposit(receiver, referrer, address(vault), amount, amount);
 
         uint256 shares = wrapper.depositWithReferral(address(vault), amount, receiver, referrer);
         vm.stopPrank();
@@ -175,7 +174,7 @@ contract YearnReferralDepositWrapperTest is Test {
         IERC20(address(token)).approve(address(wrapper), amount);
 
         vm.expectEmit(true, true, true, true);
-        emit ReferralDeposit(user, receiver, address(0), address(vault), amount, amount);
+        emit ReferralDeposit(receiver, address(0), address(vault), amount, amount);
 
         wrapper.depositWithReferral(address(vault), amount, receiver, address(0));
         vm.stopPrank();

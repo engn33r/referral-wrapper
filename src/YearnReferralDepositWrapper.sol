@@ -11,7 +11,7 @@ interface IVault {
 }
 
 interface IRegistry {
-    function isEndorsed(address vault) external returns (bool);
+    function isEndorsed(address vault) external view returns (bool);
     function governance() external view returns (address);
 }
 
@@ -22,16 +22,15 @@ contract YearnReferralDepositWrapper {
     using SafeERC20 for IERC20;
     /// @notice Emitted after a referral deposit is forwarded to a vault.
     event ReferralDeposit(
-        address indexed sender,
-        address indexed receiver,
+        address receiver,
         address indexed referrer,
-        address vault,
+        address indexed vault,
         uint256 assets,
         uint256 shares
     );
 
     // This registry address works for all EVM chains
-    address constant registry = 0xd40ecF29e001c76Dcc4cC0D9cd50520CE845B038;
+    address constant REGISTRY = 0xd40ecF29e001c76Dcc4cC0D9cd50520CE845B038;
 
     /// @notice Deposit assets into a vault and emit a referral event.
     /// @param vault The Yearn V3 vault to deposit into.
@@ -46,7 +45,7 @@ contract YearnReferralDepositWrapper {
         address referrer
     ) external returns (uint256 shares) {
         // Official Yearn vaults are endorsed in the registry, prevent deposits to other vaults
-        require(IRegistry(registry).isEndorsed(vault), "vault is not endorsed");
+        require(IRegistry(REGISTRY).isEndorsed(vault), "vault is not endorsed");
 
         // cache values
         IERC20 token = IERC20(IVault(vault).asset());
@@ -60,7 +59,7 @@ contract YearnReferralDepositWrapper {
         token.safeTransferFrom(msg.sender, address(this), assets);
         token.forceApprove(vault, assets);
         shares = IVault(vault).deposit(assets, receiver);
-        emit ReferralDeposit(msg.sender, receiver, referrer, vault, assets, shares);
+        emit ReferralDeposit(receiver, referrer, vault, assets, shares);
     }
 
     /// @notice Sweep ERC20 tokens held by this wrapper
@@ -69,7 +68,7 @@ contract YearnReferralDepositWrapper {
     function sweep(
         IERC20 _token
     ) external {
-        address gov = IRegistry(registry).governance();
+        address gov = IRegistry(REGISTRY).governance();
         require(msg.sender == gov, "Must be called by governance");
         _token.safeTransfer(gov, _token.balanceOf(address(this)));
     }
